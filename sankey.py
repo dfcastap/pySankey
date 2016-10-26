@@ -47,7 +47,7 @@ sns.set_style("white",{'font.family':[u'serif']})
 
 
         
-def sankey(before,after,colorDict={},aspect=4,rightColor=False):
+def sankey(before,after,ax,colorDict={},aspect=4,rightColor=False,beforeLabels=[],afterLabels=[]):
     '''
     Make Sankey Diagram showing flow from before-->after
     
@@ -68,6 +68,22 @@ def sankey(before,after,colorDict={},aspect=4,rightColor=False):
     # Identify all labels that appear 'before' or 'after'
     allLabels = pd.Series(np.r_[df.before.unique(),df.after.unique()]).unique()
     
+    if beforeLabels!=[]:
+        killLabels = {}
+        for l in df.before.unique():
+            if l not in beforeLabels:
+                killLabels[l]='other'
+        print(killLabels)
+        df['before'].replace(killLabels,inplace=True)
+
+    if afterLabels!=[]:
+        killLabels = {}
+        for l in df.after.unique():
+            if l not in afterLabels:
+                killLabels[l]='other'
+        df['after'].replace(killLabels,inplace=True)
+        
+    allLabels = pd.Series(np.r_[df.before.unique(),df.after.unique()]).unique()
     # If no colorDict given, make one
     if colorDict == {}:
         pal = "hls"
@@ -82,6 +98,7 @@ def sankey(before,after,colorDict={},aspect=4,rightColor=False):
         for l2 in allLabels:
             myD[l2] = len(df[(df.before==l) & (df.after==l2)])
         ns[l] = myD
+    print(ns)
         
     # Determine positions of left and right label patches and total widths
     widths = defaultdict()
@@ -108,13 +125,13 @@ def sankey(before,after,colorDict={},aspect=4,rightColor=False):
     
     # Draw vertical bars on left and right of each  label's section & print label
     for l in allLabels:
-        plt.fill_between([-0.02*xMax,0],2*[widths[l]['leftBottom']],\
+        ax.fill_between([-0.02*xMax,0],2*[widths[l]['leftBottom']],\
             2*[widths[l]['leftBottom']+widths[l]['left']],color=colorDict[l],alpha=0.99)
-        plt.fill_between([xMax,1.02*xMax],2*[widths[l]['rightBottom']],\
+        ax.fill_between([xMax,1.02*xMax],2*[widths[l]['rightBottom']],\
             2*[widths[l]['rightBottom']+widths[l]['right']],color=colorDict[l],alpha=0.99)
             
-        plt.text(-0.05*xMax,widths[l]['leftBottom']+0.5*widths[l]['left'],l,{'ha': 'right', 'va': 'center'})
-        plt.text(1.05*xMax,widths[l]['rightBottom']+0.5*widths[l]['right'],l,{'ha': 'left', 'va': 'center'})
+        ax.text(-0.05*xMax,widths[l]['leftBottom']+0.5*widths[l]['left'],l,{'ha': 'right', 'va': 'center'})
+        ax.text(1.05*xMax,widths[l]['rightBottom']+0.5*widths[l]['right'],l,{'ha': 'left', 'va': 'center'})
         
     # Plot strips
     for l in allLabels:
@@ -130,6 +147,6 @@ def sankey(before,after,colorDict={},aspect=4,rightColor=False):
             # Update bottom edges at each label so next strip starts at the right place
             widths[l]['leftBottom'] = widths[l]['leftBottom']+ns[l][l2]
             widths[l2]['rightBottom'] = widths[l2]['rightBottom']+ns[l][l2]
-            plt.fill_between(np.linspace(0,xMax,len(ys)),ys-0.5*ns[l][l2],ys+0.5*ns[l][l2],alpha=0.65,color=colorDict[lc])
+            ax.fill_between(np.linspace(0,xMax,len(ys)),ys-0.5*ns[l][l2],ys+0.5*ns[l][l2],alpha=0.65,color=colorDict[lc])
         
-    plt.gca().axis('off')  
+    ax.axis('off')
